@@ -1,6 +1,6 @@
 # Negative Meta Toolbox
 
-Small ComfyUI custom-node pack for saving and reloading the latest MiniMax H3 audio/video latent checkpoint.
+Small ComfyUI custom-node pack for MiniMax H3 latent continuation and optional workflow inputs.
 
 ## Nodes
 
@@ -56,6 +56,13 @@ Cache files live in:
 They are invalidated automatically when the source file path, size or modified
 time, context length, target geometry, or VAE class changes. Delete that folder
 manually after replacing VAE weights that retain the same class name.
+
+### Optional Color Image
+
+Upload an image for an optional color-reference override. The default **None**
+selection returns `loaded = false`, so a workflow can keep its clip/manual
+reference fallback without a required image connection. Selecting an image
+returns that image and `loaded = true`; a lazy switch can then give it priority.
 
 ## Installation
 
