@@ -15,6 +15,15 @@ from .nodes_streaming_color_transfer import NegativeMeta_StreamingColorTransfer
 from .nodes_adaptive_color_transfer import NegativeMeta_AdaptiveStreamingColorTransfer
 from .nodes_adaptive_image_color import NegativeMeta_AdaptiveImageColorTransfer
 
+# Auxiliary loader (not a node): gives the installed DaSiWa MiniMaxH3Director a
+# soft continuation canvas, so chained clips keep the source latent geometry when
+# the Director timeline has no image. Edit nothing in the DaSiWa pack; the patch
+# is reapplied on every start and disables itself on DaSiWa 0.5.x (native
+# continuity). Remove this import + call to drop the feature.
+from .nodes_h3_director_canvas import install_director_canvas
+
+install_director_canvas()
+
 WEB_DIRECTORY = "./web"
 
 

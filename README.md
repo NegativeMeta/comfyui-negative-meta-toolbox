@@ -2,6 +2,26 @@
 
 Small ComfyUI custom-node pack for MiniMax H3 latent continuation, optional workflow inputs, and memory-bounded video color transfer.
 
+## Auxiliary: DaSiWa Director continuation canvas
+
+`nodes_h3_director_canvas.py` is a loader, not a node. When the pack is imported it
+extends the installed `ComfyUI-DaSiWa-Nodes` `MiniMaxH3Director` in place with three
+optional lazy inputs: `canvas_latent`, `canvas_width`, `canvas_height`.
+
+With those connected, the Director takes its canvas from the continuation source instead
+of the resolution panel whenever the timeline has no image. Without them nothing changes,
+and an image in the timeline always wins. This exists because the panel's `aspect = auto`
+fallback is 4:3 (`0.83 MP` style canvases: 1024x768), which silently changes the H3 latent
+geometry between chained clips and makes `NegativeMeta_H3LatentTailContinuation` fail with
+`source and target video latent geometry differs`.
+
+Rules: `external_width/height_overwrite` still wins over everything; sources under 256 px
+are ignored (the workflow fallback video is 16x16); dimensions snap to the native 32 px H3
+grid; the patch is idempotent, reapplied on every start, and disables itself with a notice
+on DaSiWa 0.5.x, which handles continuation canvases natively. Custom nodes load in
+filesystem order, so when DaSiWa is imported after this pack a small waiter thread patches
+it as soon as it appears. Nothing inside the DaSiWa pack is edited.
+
 ## Nodes
 
 ### Adaptive Streaming Color Transfer
