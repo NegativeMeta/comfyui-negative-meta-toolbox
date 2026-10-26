@@ -200,9 +200,12 @@ def patch_class(base):
         return schema
 
     def check_lazy_status(self, *args, **kwargs):
+        # canvas_* belong to this patch: never forward them to DaSiWa's method.
+        canvas_values = {name: kwargs.pop(name, None) for name in CANVAS_INPUTS}
         needed = list(original_check(self, *args, **kwargs) or [])
         bound = check_signature.bind_partial(self, *args, **kwargs)
         values = dict(bound.arguments)
+        values.update(canvas_values)
         if _wants_canvas(values):
             for name in CANVAS_INPUTS:
                 if values.get(name) is None and name not in needed:
