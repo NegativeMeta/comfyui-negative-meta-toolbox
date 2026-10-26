@@ -133,7 +133,13 @@ def timeline_has_image(timeline_data) -> bool:
 
 
 def latent_canvas_size(latent):
-    """(width, height) implied by an H3 AV latent / IMAGE batch, or None."""
+    """(width, height) implied by an H3 AV latent / IMAGE batch, or None.
+
+    H3 video latents are [B, C, T, H, W]: index 3 is rows (height) and index 4 is
+    columns (width), so the pixel canvas is (W * 16, H * 16). Getting this pair
+    the wrong way round silently transposes the canvas and breaks continuation
+    with "source and target video latent geometry differs".
+    """
     if latent is None:
         return None
     samples = latent.get("samples") if isinstance(latent, dict) else latent
@@ -150,20 +156,38 @@ def latent_canvas_size(latent):
     if shape is None:
         return None
     dims = [int(size) for size in shape]
-    if len(dims) == 5:
-        return dims[3] * LATENT_SPATIAL_SCALE, dims[4] * LATENT_SPATIAL_SCALE
+    if len(dims) == 5:  # [B, C, T, H, W]
+        return dims[4] * LATENT_SPATIAL_SCALE, dims[3] * LATENT_SPATIAL_SCALE
     if len(dims) == 4:
-        if dims[0] == 24:
-            return dims[2] * LATENT_SPATIAL_SCALE, dims[3] * LATENT_SPATIAL_SCALE
-        if dims[-1] in (1, 3, 4):
-            return dims[1], dims[2]
+        if dims[0] == 24:  # unpacked video latent [C, T, H, W]
+            return dims[3] * LATENT_SPATIAL_SCALE, dims[2] * LATENT_SPATIAL_SCALE
+        if dims[-1] in (1, 3, 4):  # IMAGE [B, H, W, C]
+            return dims[2], dims[1]
     return None
+
+
+def latent_shape(latent):
+    """Raw first-stream shape of a latent, for logs (may be None)."""
+    if latent is None:
+        return None
+    samples = latent.get("samples") if isinstance(latent, dict) else latent
+    if samples is None:
+        return None
+    if hasattr(samples, "unbind"):
+        streams = list(samples.unbind())
+    elif isinstance(samples, (list, tuple)):
+        streams = list(samples)
+    else:
+        streams = [samples]
+    shape = getattr(streams[0], "shape", None) if streams else None
+    return tuple(int(size) for size in shape) if shape is not None else None
 
 
 def continuation_canvas(canvas_latent=None, canvas_width=None, canvas_height=None):
     """(width, height, source) for a usable continuation canvas, else None."""
     dims = latent_canvas_size(canvas_latent)
-    source = "continuation latent"
+    shape = latent_shape(canvas_latent)
+    source = f"continuation latent {shape}" if shape else "continuation latent"
     if dims is None and canvas_width and canvas_height:
         dims = (canvas_width, canvas_height)
         source = "continuation clip"
